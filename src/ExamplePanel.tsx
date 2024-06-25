@@ -115,7 +115,7 @@ function ExamplePanel({ context }: { context: PanelExtensionContext }): JSX.Elem
     setStatus("retreiving nodes...")
     context.callService?.("/rosapi/nodes", {})
     .then((_values: unknown) =>{ 
-      setNodeList((_values as any).nodes as string[]);
+      setNodeList(((_values as any).nodes as string[]).sort());
       setStatus("nodes retreived");  
     })
     .catch((_error: Error) => { setStatus(_error.toString()); });
