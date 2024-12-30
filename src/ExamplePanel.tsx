@@ -3,7 +3,7 @@ import { useLayoutEffect, useEffect, useState } from "react";
 import ReactDOM from "react-dom";
 import type {Parameter, ParameterValue, SetSrvParam} from "parameter_types";
 
-// v0.0.1 //
+// v0.0.3 //
 
 let node: string;
 let paramNameList: string[];
@@ -28,9 +28,9 @@ function ExamplePanel({ context }: { context: PanelExtensionContext }): JSX.Elem
 
   useLayoutEffect( () => {
 
-    context.onRender = (renderState: RenderState, done) => { 
+    context.onRender = (renderState: RenderState, done) => {
 
-      setRenderDone(() => done); 
+      setRenderDone(() => done);
       updateNodeList();
 
       //Manage some styling for light and dark theme
@@ -53,7 +53,7 @@ function ExamplePanel({ context }: { context: PanelExtensionContext }): JSX.Elem
   }, []);
 
   // invoke the done callback once the render is complete
-  useEffect(() => {  
+  useEffect(() => {
     renderDone?.();
   }, [renderDone]);
 
@@ -72,7 +72,7 @@ function ExamplePanel({ context }: { context: PanelExtensionContext }): JSX.Elem
 
   /**
    * determines if a string[] contains exlusively booleans
-   * @param strArr string[] to check  
+   * @param strArr string[] to check
    * @returns true if strArr only contains booleans, false otherwise
    */
   const isBooleanArr = (strArr: string[]) => {
@@ -114,13 +114,13 @@ function ExamplePanel({ context }: { context: PanelExtensionContext }): JSX.Elem
   const updateNodeList = () => {
     setStatus("retreiving nodes...")
     context.callService?.("/rosapi/nodes", {})
-    .then((_values: unknown) =>{ 
+    .then((_values: unknown) =>{
       setNodeList(((_values as any).nodes as string[]).sort());
-      setStatus("nodes retreived");  
+      setStatus("nodes retreived");
     })
     .catch((_error: Error) => { setStatus(_error.toString()); });
   }
-  
+
   /**
    * Retrieves a list of all parameters for the current node and their values
    */
@@ -138,7 +138,7 @@ function ExamplePanel({ context }: { context: PanelExtensionContext }): JSX.Elem
         for (let i = 0; i < paramNameList.length; i++) {
           tempList.push({name: paramNameList[i]!, value: paramValList[i]!});
         }
-        if(tempList.length > 0) 
+        if(tempList.length > 0)
           setParamList(tempList);
 
         if(paramNameList !== undefined) {
@@ -166,16 +166,18 @@ function ExamplePanel({ context }: { context: PanelExtensionContext }): JSX.Elem
       }
     }
 
-    setSrvParamList(tempList);
-    context.callService?.(node + "/set_parameters", {parameters: srvParamList})
-    .then(() => {
-      updateParamList();
-      setStatus("parameters set");
-    })
-    .catch((error: Error) => {
-      updateParamList();
-      setStatus("Error: " + JSON.stringify(error));
-    });
+    for(let param: number = 0; param < tempList.length; param++) {
+      const singleParamList: SetSrvParam[] = tempList[param] ? [tempList[param]!].filter(Boolean) : [];
+      setSrvParamList(singleParamList);
+      context.callService?.(node + "/set_parameters", { parameters: singleParamList })
+      .then(() => {
+        setStatus("parameters set");
+      })
+      .catch((error: Error) => {
+        setStatus("Error: " + JSON.stringify(error));
+      });
+    }
+    updateParamList();
   }
 
 
@@ -193,7 +195,7 @@ function ExamplePanel({ context }: { context: PanelExtensionContext }): JSX.Elem
   }
 
   /**
-   * Update the list of Parameters with new values to be set 
+   * Update the list of Parameters with new values to be set
    * @param val The new value to be set
    * @param name The name of the parameter that will be set to 'val'
    */
@@ -209,25 +211,25 @@ function ExamplePanel({ context }: { context: PanelExtensionContext }): JSX.Elem
       let ssp: SetSrvParam = {};
       let valStrArr: string[] = [];
       switch (paramList![idx]?.value.type!) {
-        case 1: 
-          ssp = { name: name, value: { type: 1, bool_value: stringToBoolean(val) }}; 
+        case 1:
+          ssp = { name: name, value: { type: 1, bool_value: stringToBoolean(val) }};
           break;
 
-        case 2: 
-          ssp = { name: name, value: { type: 2, integer_value: +val }}; 
+        case 2:
+          ssp = { name: name, value: { type: 2, integer_value: +val }};
           break;
 
-        case 3: 
-          ssp = { name: name, value: { type: 3, double_value: +val }}; 
+        case 3:
+          ssp = { name: name, value: { type: 3, double_value: +val }};
           break;
 
-        case 4: 
-          ssp = { name: name, value: { type: 4, string_value: val }}; 
+        case 4:
+          ssp = { name: name, value: { type: 4, string_value: val }};
           break;
- 
+
         // TODO: Implement format for byte arrays
-        case 5: 
-          //ssp = { name: name, value: { type: 5, byte_array_value: val as unknown as number[] }}; 
+        case 5:
+          //ssp = { name: name, value: { type: 5, byte_array_value: val as unknown as number[] }};
           break;
 
         case 6:
@@ -242,7 +244,7 @@ function ExamplePanel({ context }: { context: PanelExtensionContext }): JSX.Elem
           }
           break;
 
-        case 7: 
+        case 7:
         valStrArr = val.replace(" ", "").replace("[", "").replace("]", "").split(",");
           ssp = { name: name, value: { type: 7, integer_array_value: valStrArr.map(Number) }};
           break;
@@ -254,10 +256,10 @@ function ExamplePanel({ context }: { context: PanelExtensionContext }): JSX.Elem
 
         case 9:
           val.replace(" ", "");
-          if(val.charAt(0) == '[' && val.charAt(val.length - 1) == ']') 
+          if(val.charAt(0) == '[' && val.charAt(val.length - 1) == ']')
             val = val.substring(1, val.length - 1);
           valStrArr = val.split(",");
-          ssp = { name: name, value: { type: 9, string_array_value: valStrArr }}; 
+          ssp = { name: name, value: { type: 9, string_array_value: valStrArr }};
           break;
 
         default: ssp = {}; break;
@@ -270,7 +272,7 @@ function ExamplePanel({ context }: { context: PanelExtensionContext }): JSX.Elem
       tempValList.push(getParameterValue(element));
     });
   }
-  
+
   /**
    * Creates a dropdown input box if param is a boolean, creates a text input box otherwise
    * @param   param The parameter that an input box is being created for
@@ -290,7 +292,7 @@ function ExamplePanel({ context }: { context: PanelExtensionContext }): JSX.Elem
       );
     }
     return(
-      <input style={inputStyle} placeholder={getParameterValue(param.value)} onChange={(event) => { updateSrvParamList(param.name, event.target.value) }}/> 
+      <input style={inputStyle} placeholder={getParameterValue(param.value)} onChange={(event) => { updateSrvParamList(param.name, event.target.value) }}/>
     );
   }
 
@@ -299,10 +301,10 @@ function ExamplePanel({ context }: { context: PanelExtensionContext }): JSX.Elem
    * loads parameter values from a YAML file and sets all new values
    * @param files the YAML file to be uploaded
    */
-  const loadFile = (files: FileList | null) => { 
+  const loadFile = (files: FileList | null) => {
     if(files !== null) {
       files[0]?.text()
-      .then((value: string) => {      
+      .then((value: string) => {
         value = value.replaceAll(/[^\S\r\n]/gi, "");
         value = value.replace(node + ":\n", "");
         value = value.replace("ros__parameters:\n", "");
@@ -435,7 +437,7 @@ function ExamplePanel({ context }: { context: PanelExtensionContext }): JSX.Elem
       borderRadius: "3px",
 
     };
-    
+
     inputStyle = {
 
       fontSize: "1rem",
@@ -458,7 +460,7 @@ function ExamplePanel({ context }: { context: PanelExtensionContext }): JSX.Elem
   }
 
   const statusStyle = {
-    fontSize: "0.8rem", 
+    fontSize: "0.8rem",
     padding: "5px",
     borderTop: "0.5px solid",
   }
@@ -475,18 +477,18 @@ function ExamplePanel({ context }: { context: PanelExtensionContext }): JSX.Elem
     width: "100%"
   };
   footerStyle;
-  
+
   ///////////////////////////////////////////////////////////////////
 
   ///////////////////////// HTML PANEL //////////////////////////////
 
   return (
     <body>
-    <div style={{ padding: "1rem", 
-                  scrollBehavior: "smooth", 
-                  maxHeight:"calc(100% - 25px)", 
+    <div style={{ padding: "1rem",
+                  scrollBehavior: "smooth",
+                  maxHeight:"calc(100% - 25px)",
                   overflowY: "scroll",
-                  fontFamily: "helvetica", 
+                  fontFamily: "helvetica",
                   fontSize: "1rem",
                   }}>
       <h1>ROS2 Parameter Extension</h1>
@@ -503,19 +505,19 @@ function ExamplePanel({ context }: { context: PanelExtensionContext }): JSX.Elem
       </select>
 
       <form>
-        <button 
-          style={setButtonStyle} 
-          onMouseEnter={() => setBgColor("#8f8f8f")} 
-          onMouseLeave={() => colorScheme == "dark" ? setBgColor("#4d4d4d"): setBgColor("#d6d6d6")} 
-          onClick={setParam} 
+        <button
+          style={setButtonStyle}
+          onMouseEnter={() => setBgColor("#8f8f8f")}
+          onMouseLeave={() => colorScheme == "dark" ? setBgColor("#4d4d4d"): setBgColor("#d6d6d6")}
+          onClick={setParam}
           type="reset">
             Set Parameters
         </button>
 
-        <label 
-          style={loadButtonStyle} 
-          onMouseEnter={() => setLoadButtonBgColor("#8f8f8f")} 
-          onMouseLeave={() => colorScheme == "dark" ? setLoadButtonBgColor("#4d4d4d"): setLoadButtonBgColor("#d6d6d6")} 
+        <label
+          style={loadButtonStyle}
+          onMouseEnter={() => setLoadButtonBgColor("#8f8f8f")}
+          onMouseLeave={() => colorScheme == "dark" ? setLoadButtonBgColor("#4d4d4d"): setLoadButtonBgColor("#d6d6d6")}
           >
           <input type="file" style={{display: "none"}} onChange={(event) => {loadFile(event.target.files)}}/>
             Load
@@ -532,15 +534,15 @@ function ExamplePanel({ context }: { context: PanelExtensionContext }): JSX.Elem
           <b style={{ borderBottom: "1px solid", padding: "2px", marginBottom: "3px" }}>Type</b>
           <b style={{ borderBottom: "1px solid", padding: "2px", marginBottom: "3px" }}>Value</b>
           <b style={{ borderBottom: "1px solid", padding: "2px", marginBottom: "3px" }}>New Value</b>
-          
+
           {(paramList ?? []).map((result) => (
             <>
               <div style={{margin: "0px 4px 0px 4px"}} key={result.name}>{result.name}:</div>
               <div style={{margin: "0px 4px 0px 4px"}}>{getType(result.value)}</div>
               <div style={{margin: "0px 4px 0px 4px"}}>{getParameterValue(result.value)}</div>
-              <div style={{margin: "0px 4px 0px 4px"}}> 
+              <div style={{margin: "0px 4px 0px 4px"}}>
                 {createInputBox(result)}
-                </div>  
+                </div>
             </>
           ))}
         </div>
