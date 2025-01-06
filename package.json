@@ -4,7 +4,7 @@
   "description": "Interact with Parameters in ROS2",
   "publisher": "Daniel Clapp",
   "homepage": "https://github.com/danclapp4/ros2-parameter-extension",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "license": "MIT",
   "main": "./dist/extension.js",
   "keywords": [],
